@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(imx219_camera)
+project(divitor_driver)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -25,11 +25,25 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/headers/)
+
 add_executable(imx219_camera src/imx219_camera_node.cpp)
 ament_target_dependencies(imx219_camera rclcpp sensor_msgs OpenCV)
 
+add_executable(mlx90640_camera
+  src/mlx90640_camera_node.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/functions/MLX90640_API.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/functions/MLX90640_LINUX_I2C_Driver.cpp
+)
+ament_target_dependencies(mlx90640_camera
+  rclcpp
+  sensor_msgs
+  OpenCV
+)
+
 install(TARGETS
   imx219_camera
+  mlx90640_camera
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
