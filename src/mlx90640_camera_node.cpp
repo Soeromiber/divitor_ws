@@ -1,5 +1,6 @@
 #define DEBUG
 
+#include <cv_bridge/cv_bridge.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
@@ -10,6 +11,9 @@
 
 class MLX90640Camera {
   public:
+    const int WIDTH = 32;
+    const int HEIGHT = 24;
+
     bool Open(uint8_t i2c_address, uint8_t refresh_rate,
               float emissivity = 0.95f, float reflected_temperature = 23.0f) {
         i2c_address_ = i2c_address;
@@ -71,7 +75,8 @@ class MLX90640CameraNode : public rclcpp::Node {
             return;
         }
 
-        image_pub_ = create_publisher<sensor_msgs::msg::Image>("thermal_camera/raw", 1);
+        image_pub_ =
+            create_publisher<sensor_msgs::msg::Image>("thermal_camera/raw", 1);
 
         int true_refresh_rate =
             1 << refresh_rate; // Convert power-of-2 to actual Hz
@@ -85,25 +90,21 @@ class MLX90640CameraNode : public rclcpp::Node {
     }
 
     void CaptureAndPublishFrame() {
-        auto msg = std::make_unique<sensor_msgs::msg::Image>();
-        msg->header.stamp = now();
-        msg->header.frame_id = "mlx90640_camera";
-        msg->height = 24; // MLX90640 has a resolution of 24x32
-        msg->width = 32;
-        msg->encoding = "32FC1"; // 32-bit float, single channel
-        msg->is_bigendian = false;
-        msg->step = msg->width * sizeof(float); // Number of bytes per row
-        msg->data.resize(msg->height *
-                         msg->step); // Allocate space for the data
+        std_msgs::msg::Header header;
+        header.stamp = now();
+        header.frame_id = "mlx90640_camera";
 
-        float *thermal_frame = reinterpret_cast<float *>(msg->data.data());
-        if (!camera_.ReadFrame(thermal_frame)) {
+        cv_bridge::CvImage cv_image(
+            std_msgs::msg::Header(), sensor_msgs::image_encodings::TYPE_32FC1,
+            cv::Mat(camera_.HEIGHT, camera_.WIDTH, CV_32FC1));
+
+        if (!camera_.ReadFrame(cv_image.image.ptr<float>())) {
             RCLCPP_ERROR(this->get_logger(),
                          "Failed to read thermal frame from MLX90640 camera.");
             return;
         }
 
-        image_pub_->publish(std::move(msg));
+        image_pub_->publish(*cv_image.toImageMsg());
     }
 
   private:

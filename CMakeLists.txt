@@ -12,6 +12,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(cv_bridge REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -39,6 +40,7 @@ ament_target_dependencies(mlx90640_camera
   rclcpp
   sensor_msgs
   OpenCV
+  cv_bridge
 )
 
 install(TARGETS
