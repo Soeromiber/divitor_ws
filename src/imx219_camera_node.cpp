@@ -21,7 +21,7 @@ class IMX219Camera : public rclcpp::Node {
                     << ", height=" << frame_size.height
                     << ", framerate=" << framerate << "/1 ! "
                     << "videoconvert ! " << "video/x-raw, format=BGR ! "
-                    << "appsink sync=false";
+                    << "appsink";
         RCLCPP_DEBUG_STREAM(get_logger(),
                             "GStreamer pipeline: " << pipeline_ss.str());
 
