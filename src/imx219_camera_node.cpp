@@ -32,7 +32,7 @@ class IMX219Camera : public rclcpp::Node {
             return;
         }
 
-        image_pub_ = create_publisher<sensor_msgs::msg::Image>("image_raw", 1);
+        image_pub_ = create_publisher<sensor_msgs::msg::Image>("/rgb_camera/image_raw", 1);
 
         timer_ = create_wall_timer(std::chrono::milliseconds(1000 / framerate),
                                    [this]() { PublishImage(); });
