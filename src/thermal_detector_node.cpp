@@ -145,13 +145,13 @@ class ThermalDetectorNode : public rclcpp::Node
 
         rclcpp::SensorDataQoS qos;
         image_sub_ = create_subscription<sensor_msgs::msg::Image>(
-            "thermal_camera/raw", qos,
-            [this](sensor_msgs::msg::Image::UniquePtr msg) { ProcessThermalFrame(std::move(msg)); });
+            "thermal_camera/image_raw", qos,
+            [this](const sensor_msgs::msg::Image::ConstSharedPtr &msg) { ProcessThermalFrame(msg); });
 
-        visualization_pub_ = create_publisher<sensor_msgs::msg::Image>("thermal_camera/visualization", 10);
+        visualization_pub_ = create_publisher<sensor_msgs::msg::Image>("thermal_detection/visualization", 10);
     }
 
-    void ProcessThermalFrame(sensor_msgs::msg::Image::ConstSharedPtr msg)
+    void ProcessThermalFrame(const sensor_msgs::msg::Image::ConstSharedPtr &msg)
     {
         sensor_msgs::msg::Image::UniquePtr vis_msg = std::make_unique<sensor_msgs::msg::Image>();
         vis_msg->header = msg->header;

@@ -24,13 +24,13 @@ class YoloDetectorNode : public rclcpp::Node
 
         rclcpp::SensorDataQoS sensor_qos;
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/imx219_camera/raw", sensor_qos,
-            [this](sensor_msgs::msg::Image::ConstSharedPtr msg) { DetectAndPublish(msg); });
+            "/rgb_camera/image_raw", sensor_qos,
+            [this](const sensor_msgs::msg::Image::ConstSharedPtr msg) { DetectAndPublish(msg); });
 
-        visualization_pub_ = this->create_publisher<sensor_msgs::msg::Image>("/imx219_camera/visualization", 10);
+        visualization_pub_ = this->create_publisher<sensor_msgs::msg::Image>("/rgb_detection/visualization", 10);
     }
 
-    void DetectAndPublish(sensor_msgs::msg::Image::ConstSharedPtr msg)
+    void DetectAndPublish(const sensor_msgs::msg::Image::ConstSharedPtr &msg)
     {
         cv::Mat frame = cv_bridge::toCvShare(msg, "bgr8")->image;
         auto detections = detector_->detect(frame);
