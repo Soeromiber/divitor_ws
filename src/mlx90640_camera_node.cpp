@@ -76,7 +76,7 @@ class MLX90640CameraNode : public rclcpp::Node {
         }
 
         image_pub_ =
-            create_publisher<sensor_msgs::msg::Image>("thermal_camera/raw", 1);
+            create_publisher<sensor_msgs::msg::Image>("thermal_camera/image_raw", 1);
 
         int true_refresh_rate =
             1 << refresh_rate; // Convert power-of-2 to actual Hz
