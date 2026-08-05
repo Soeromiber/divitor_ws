@@ -26,25 +26,30 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/headers/)
-
-add_executable(imx219_camera src/imx219_camera_node.cpp)
-ament_target_dependencies(imx219_camera rclcpp sensor_msgs OpenCV)
+add_executable(imx219_camera_node
+  src/imx219_camera_node.cpp
+  src/imx219_camera_main.cpp)
+target_include_directories(imx219_camera_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+ament_target_dependencies(imx219_camera_node rclcpp sensor_msgs OpenCV)
 
 add_executable(mlx90640_camera
+  src/mlx90640_camera.cpp
   src/mlx90640_camera_node.cpp
+  src/mlx90640_camera_main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/functions/MLX90640_API.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/functions/MLX90640_LINUX_I2C_Driver.cpp
-)
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/functions/MLX90640_LINUX_I2C_Driver.cpp)
+target_include_directories(mlx90640_camera PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/mlx90640-library/headers>)
 ament_target_dependencies(mlx90640_camera
   rclcpp
   sensor_msgs
   OpenCV
-  cv_bridge
-)
+  cv_bridge)
 
 install(TARGETS
-  imx219_camera
+  imx219_camera_node
   mlx90640_camera
   DESTINATION lib/${PROJECT_NAME})
 
