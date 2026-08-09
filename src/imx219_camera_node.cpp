@@ -3,7 +3,12 @@
 #include <chrono>
 #include <sstream>
 
-IMX219CameraNode::IMX219CameraNode() : Node("imx219_camera") {
+#include <rclcpp_components/register_node_macro.hpp>
+
+namespace divitor_driver {
+
+IMX219CameraNode::IMX219CameraNode(const rclcpp::NodeOptions &options)
+    : Node("imx219_camera", options) {
     declare_parameter("width", 640);
     declare_parameter("height", 480);
 
@@ -55,3 +60,7 @@ void IMX219CameraNode::PublishImage() {
 
     image_pub_->publish(std::move(msg));
 }
+
+} // namespace divitor_driver
+
+RCLCPP_COMPONENTS_REGISTER_NODE(divitor_driver::IMX219CameraNode)

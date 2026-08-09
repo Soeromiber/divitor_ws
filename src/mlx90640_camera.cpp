@@ -2,6 +2,8 @@
 
 #include "MLX90640_I2C_Driver.h"
 
+namespace divitor_driver {
+
 bool MLX90640Camera::Open(uint8_t i2c_address, uint8_t refresh_rate,
                           float emissivity, float reflected_temperature) {
     i2c_address_ = i2c_address;
@@ -36,3 +38,5 @@ bool MLX90640Camera::ReadFrame(float *temperatures) {
 }
 
 bool MLX90640Camera::opened() const { return opened_; }
+
+} // namespace divitor_driver

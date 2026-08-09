@@ -8,6 +8,8 @@
 
 #define MLX_I2C_ADDR 0x33
 
+namespace divitor_driver {
+
 class MLX90640Camera {
   public:
     const int WIDTH = 32;
@@ -27,3 +29,5 @@ class MLX90640Camera {
     std::array<uint16_t, 834> frame_{};
     paramsMLX90640 params_{};
 };
+
+} // namespace divitor_driver

@@ -10,7 +10,7 @@ def generate_launch_description():
     format = LaunchConfiguration('format')
 
     gscam_config = PythonExpression([
-        '"gst-launch-1.0 libcamerasrc ! video/x-raw,width=', width, ',height=', height, ',framerate=', framerate, '/1,format=', format, ' !  videoconvert"'
+        '"libcamerasrc ! video/x-raw,width=', width, ',height=', height, ',framerate=', framerate, '/1,format=', format, ' ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=upstream ! videoconvert"'
     ])
 
     return LaunchDescription([

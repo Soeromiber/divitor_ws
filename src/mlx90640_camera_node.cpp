@@ -2,7 +2,12 @@
 
 #include <chrono>
 
-MLX90640CameraNode::MLX90640CameraNode() : Node("mlx90640_camera") {
+#include <rclcpp_components/register_node_macro.hpp>
+
+namespace divitor_driver {
+
+MLX90640CameraNode::MLX90640CameraNode(const rclcpp::NodeOptions &options)
+    : Node("mlx90640_camera", options) {
     declare_parameter("i2c_address", MLX_I2C_ADDR);
     declare_parameter("power_of_2_refresh_rate", 0x05);
 
@@ -45,3 +50,7 @@ void MLX90640CameraNode::CaptureAndPublishFrame() {
 
     image_pub_->publish(*cv_image.toImageMsg());
 }
+
+} // namespace divitor_driver
+
+RCLCPP_COMPONENTS_REGISTER_NODE(divitor_driver::MLX90640CameraNode)
