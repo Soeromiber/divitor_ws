@@ -23,9 +23,9 @@ def generate_launch_description():
             executable='gscam_node',
             name='gscam_node',
             remappings=[
-                ('/camera/image_raw', '/rgb_camera/image_raw'),
-                ('/camera/image_raw/compressed', '/rgb_camera/image_raw/compressed'),
-                ('/camera/image_raw/theora', '/rgb_camera/image_raw/theora'),
+                ('/camera/image_raw', 'sensors/camera/rgb/image_raw'),
+                ('/camera/image_raw/compressed', 'sensors/camera/rgb/image_raw/compressed'),
+                ('/camera/image_raw/theora', 'sensors/camera/rgb/image_raw/theora'),
             ],
             parameters=[
                 {'gscam_config': gscam_config},

@@ -41,14 +41,14 @@ AdaptiveThermalDetectorNode::AdaptiveThermalDetectorNode(
     // Publishers
     pub_detections_ =
         this->create_publisher<vision_msgs::msg::Detection2DArray>(
-            "/detections", 1);
+            "perception/thermal/detections", 1);
 
     pub_debug_mask_ =
-        this->create_publisher<sensor_msgs::msg::Image>("/debug_mask", 1);
+        this->create_publisher<sensor_msgs::msg::Image>("perception/thermal/debug_mask", 1);
 
     // Subscriber
     sub_preprocessed_ = this->create_subscription<sensor_msgs::msg::Image>(
-        "/raw_temperature", rclcpp::SensorDataQoS().keep_last(1),
+        "perception/thermal/image_preprocessed", rclcpp::SensorDataQoS().keep_last(1),
         std::bind(&AdaptiveThermalDetectorNode::TemperatureCallback, this,
                   std::placeholders::_1));
 

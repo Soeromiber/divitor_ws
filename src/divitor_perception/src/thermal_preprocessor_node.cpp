@@ -32,11 +32,11 @@ ThermalPreprocessorNode::ThermalPreprocessorNode(
 
     // Setup Publisher using SensorDataQoS (Best Effort, Volatile)
     pub_preprocessed_ = this->create_publisher<sensor_msgs::msg::Image>(
-        "/preprocessed_temperature", 1);
+        "perception/thermal/image_preprocessed", 1);
 
     // Setup Subscriber
     sub_raw_image_ = this->create_subscription<sensor_msgs::msg::Image>(
-        "/raw_temperature", rclcpp::SensorDataQoS().keep_last(1),
+        "sensors/camera/thermal/image_raw", rclcpp::SensorDataQoS().keep_last(1),
         std::bind(&ThermalPreprocessorNode::rawImageCallback, this,
                   std::placeholders::_1));
 

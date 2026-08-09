@@ -28,13 +28,13 @@ ThermalDetectorNode::ThermalDetectorNode(const rclcpp::NodeOptions &options)
 
     rclcpp::SensorDataQoS qos;
     image_sub_ = create_subscription<sensor_msgs::msg::Image>(
-        "thermal_camera/image_raw", qos,
+        "sensors/camera/thermal/image_raw", qos,
         [this](const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
             ProcessThermalFrame(msg);
         });
 
     visualization_pub_ = create_publisher<sensor_msgs::msg::Image>(
-        "thermal_detection/visualization", 10);
+        "perception/thermal/visualization", 10);
 }
 
 void ThermalDetectorNode::ProcessThermalFrame(

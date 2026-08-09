@@ -39,18 +39,18 @@ graph TD
     end
 
     %% Topics
-    IMX -- "/rgb_camera/image_raw" --> YOLO
-    MLX -- "/thermal_camera/image_raw" --> PRE
-    PRE -- "/thermal_camera/image_preprocessed" --> DET
+    IMX -- "sensors/camera/rgb/image_raw" --> YOLO
+    MLX -- "sensors/camera/thermal/image_raw" --> PRE
+    PRE -- "perception/thermal/image_preprocessed" --> DET
     
     %% Outputs
-    DET -- "/thermal_camera/detections" --> D_OUT["vision_msgs/Detection2DArray"]
-    DET -- "/thermal_camera/debug_mask" --> M_OUT["sensor_msgs/Image (Debug Mask)"]
-    YOLO -- "/rgb_detection/visualization" --> Y_OUT["sensor_msgs/Image (YOLO Vis)"]
+    DET -- "perception/thermal/detections" --> D_OUT["vision_msgs/Detection2DArray"]
+    DET -- "perception/thermal/debug_mask" --> M_OUT["sensor_msgs/Image (Debug Mask)"]
+    YOLO -- "perception/rgb/visualization" --> Y_OUT["sensor_msgs/Image (YOLO Vis)"]
     
     %% Simple Thermal
     MLX -. "alternative subscription" .-> TDET
-    TDET -- "thermal_detection/visualization" --> T_OUT["sensor_msgs/Image (Thermal Vis)"]
+    TDET -- "perception/thermal/visualization" --> T_OUT["sensor_msgs/Image (Thermal Vis)"]
 ```
 
 ---
@@ -113,7 +113,7 @@ Handles communication with physical sensors.
 * **`mlx90640_camera`**:
   * Reads the 32x24 raw thermal matrix from the MLX90640 sensor over I2C.
   * **Published Topics**:
-    * `thermal_camera/image_raw` (`sensor_msgs/msg/Image` in `32FC1` format)
+    * `sensors/camera/thermal/image_raw` (`sensor_msgs/msg/Image` in `32FC1` format)
   * **Parameters**:
     * `i2c_address` (default: `0x33`): I2C address of the thermal camera.
     * `power_of_2_refresh_rate` (default: `5` -> $2^5 = 32\text{ Hz}$): Configures refresh rate of the sensor.
@@ -121,7 +121,7 @@ Handles communication with physical sensors.
 * **`imx219_camera_node`** (Optional wrapper; `gscam` is typically used instead):
   * Captures frames via GStreamer `libcamerasrc` and publishes as ROS Images.
   * **Published Topics**:
-    * `/rgb_camera/image_raw` (`sensor_msgs/msg/Image`)
+    * `sensors/camera/rgb/image_raw` (`sensor_msgs/msg/Image`)
 
 ---
 
@@ -132,9 +132,9 @@ Processes camera frames and performs target extraction.
 * **`thermal_preprocessor`**:
   * Applies spatial upsampling (Bicubic), temporal Exponential Moving Average (EMA) filtering to reduce noise, and Gaussian Blur.
   * **Subscribed Topics**:
-    * `/raw_temperature` (remapped from `/thermal_camera/image_raw`)
+    * `sensors/camera/thermal/image_raw` (`sensor_msgs/msg/Image`)
   * **Published Topics**:
-    * `/preprocessed_temperature` (remapped to `/thermal_camera/image_preprocessed`)
+    * `perception/thermal/image_preprocessed` (`sensor_msgs/msg/Image`)
   * **Parameters**:
     * `target_width` (default: `128`): Spatial upscaling target width.
     * `target_height` (default: `96`): Spatial upscaling target height.
@@ -144,10 +144,10 @@ Processes camera frames and performs target extraction.
 * **`adaptive_thermal_detector`**:
   * Dynamic target detector with specialized lighting/solar rejection modes.
   * **Subscribed Topics**:
-    * `/raw_temperature` (remapped to `/thermal_camera/image_preprocessed`)
+    * `perception/thermal/image_preprocessed` (`sensor_msgs/msg/Image`)
   * **Published Topics**:
-    * `/detections` (`vision_msgs/msg/Detection2DArray`): Detection bounding boxes.
-    * `/debug_mask` (`sensor_msgs/msg/Image`): Cleaned binary detection mask.
+    * `perception/thermal/detections` (`vision_msgs/msg/Detection2DArray`): Detection bounding boxes.
+    * `perception/thermal/debug_mask` (`sensor_msgs/msg/Image`): Cleaned binary detection mask.
   * **Parameters**:
     * `detection_mode` (default: `"NIGHT"`): `"NIGHT"` (global dynamic thresholding) or `"MIDDAY"` (local variance/box-filtered thresholding).
     * `k_sigma` (default: `1.5`): Multiplier for standard deviation thresholds.
@@ -159,9 +159,9 @@ Processes camera frames and performs target extraction.
 * **`yolo_detector_node`**:
   * RGB camera human/object detector using ONNX Runtime.
   * **Subscribed Topics**:
-    * `/rgb_camera/image_raw` (`sensor_msgs/msg/Image`)
+    * `sensors/camera/rgb/image_raw` (`sensor_msgs/msg/Image`)
   * **Published Topics**:
-    * `/rgb_detection/visualization` (`sensor_msgs/msg/Image` with bounding boxes drawn)
+    * `perception/rgb/visualization` (`sensor_msgs/msg/Image` with bounding boxes drawn)
   * **Parameters**:
     * `model_path`: Location of the `.onnx` model (defaults to package `models/yolo26n.onnx`).
     * `labels_path`: Path to COCO class labels (defaults to package `models/coco.names`).

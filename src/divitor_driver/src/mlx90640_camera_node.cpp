@@ -22,7 +22,7 @@ MLX90640CameraNode::MLX90640CameraNode(const rclcpp::NodeOptions &options)
     }
 
     image_pub_ = create_publisher<sensor_msgs::msg::Image>(
-        "thermal_camera/image_raw", 1);
+        "sensors/camera/thermal/image_raw", 1);
 
     int true_refresh_rate = 1 << refresh_rate;
     timer_ =

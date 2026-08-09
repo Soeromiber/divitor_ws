@@ -20,9 +20,9 @@ def generate_launch_description():
                     'camera.image_raw.compressed.jpeg_quality': 30,
                 }],
                 remappings=[
-                    ('/camera/image_raw', '/rgb_camera/image_raw'),
-                    ('/camera/image_raw/compressed', '/rgb_camera/image_raw/compressed'),
-                    ('/camera/image_raw/theora', '/rgb_camera/image_raw/theora'),
+                    ('/camera/image_raw', 'sensors/camera/rgb/image_raw'),
+                    ('/camera/image_raw/compressed', 'sensors/camera/rgb/image_raw/compressed'),
+                    ('/camera/image_raw/theora', 'sensors/camera/rgb/image_raw/theora'),
                 ],
                 extra_arguments=[{'use_intra_process_comms': True}],
             ),
@@ -46,24 +46,12 @@ def generate_launch_description():
                 package='divitor_perception',
                 plugin='divitor_perception::ThermalPreprocessorNode',
                 name='thermal_preprocessor',
-                remappings=[                remappings=[
-                    ('/raw_temperature', '/thermal_camera/image_raw')
-                    ('/preprocessed_temperature', '/thermal_camera/image_preprocessed')
-                ]
-                    ('/raw_temperature', '/thermal_camera/image_raw'),
-                    ('/preprocessed_temperature', '/thermal_camera/image_preprocessed'),
-                ],
                 extra_arguments=[{'use_intra_process_comms': True}],
             ),
             ComposableNode(
                 package='divitor_perception',
                 plugin='divitor_perception::AdaptiveThermalDetectorNode',
                 name='adaptive_thermal_detector',
-                remappings=[
-                    ('/detections', '/thermal_camera/detections'),
-                    ('/debug_mask', '/thermal_camera/debug_mask'),
-                    ('/raw_temperature', '/thermal_camera/image_preprocessed'),
-                ],
                 extra_arguments=[{'use_intra_process_comms': True}],
             ),
             ComposableNode(

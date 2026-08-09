@@ -1,1 +1,1 @@
-gst-launch-1.0 --gst-plugin-path=install/gst_bridge/lib/gst_bridge/ rosimagesrc ros-topic=/imx219_camera/visualization ! queue max-size-buffers=2 videoconvert ! x264enc tune=zerolatency speed-preset=ultrafast ! rtph264pay ! udpsink host=10.42.0.1 port=5000
+gst-launch-1.0 --gst-plugin-path=install/gst_bridge/lib/gst_bridge/ rosimagesrc ros-topic=/perception/rgb/visualization ! queue max-size-buffers=2 videoconvert ! x264enc tune=zerolatency speed-preset=ultrafast ! rtph264pay ! udpsink host=10.42.0.1 port=5000

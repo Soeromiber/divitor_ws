@@ -25,13 +25,13 @@ YoloDetectorNode::YoloDetectorNode(const rclcpp::NodeOptions &options)
 
     rclcpp::SensorDataQoS sensor_qos;
     image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-        "/rgb_camera/image_raw", sensor_qos,
+        "sensors/camera/rgb/image_raw", sensor_qos,
         [this](const sensor_msgs::msg::Image::ConstSharedPtr msg) {
             DetectAndPublish(msg);
         });
 
     visualization_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
-        "/rgb_detection/visualization", 10);
+        "perception/rgb/visualization", 10);
 }
 
 void YoloDetectorNode::DetectAndPublish(

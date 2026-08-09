@@ -33,7 +33,7 @@ IMX219CameraNode::IMX219CameraNode(const rclcpp::NodeOptions &options)
     }
 
     image_pub_ =
-        create_publisher<sensor_msgs::msg::Image>("/rgb_camera/image_raw", 1);
+        create_publisher<sensor_msgs::msg::Image>("sensors/camera/rgb/image_raw", 1);
 
     timer_ = create_wall_timer(std::chrono::milliseconds(1000 / framerate),
                                [this]() { PublishImage(); });
