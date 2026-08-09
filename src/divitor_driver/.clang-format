@@ -1,0 +1,11 @@
+---
+# Base rules to inherit from (LLVM, Google, Chromium, Mozilla, Microsoft, or WebKit)
+BasedOnStyle: LLVM
+
+# Column limits and indentation rules
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Clean up inclusions automatically
+SortIncludes: CaseSensitive
