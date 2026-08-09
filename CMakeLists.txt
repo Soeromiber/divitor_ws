@@ -11,8 +11,10 @@ set(YOLOS_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/YOLOs-CPP" CACHE PATH
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 
@@ -24,7 +26,6 @@ if(NOT DEFINED ONNXRUNTIME_DIR)
         message(STATUS "Found ONNX Runtime dependency at: ${ONNXRUNTIME_DIR}")
     endif()
 endif()
-
 
 add_subdirectory(${YOLOS_CPP_DIR} ${CMAKE_CURRENT_BINARY_DIR}/YOLOs-CPP)
 
@@ -46,30 +47,109 @@ include_directories(
   ${ONNXRUNTIME_DIR}/include
 )
 
-add_executable(thermal_detector_node src/thermal_detector_node.cpp)
-ament_target_dependencies(thermal_detector_node
+# Thermal Detector Component
+add_library(thermal_detector_component SHARED
+  src/thermal_detector.cpp
+  src/thermal_detector_node.cpp)
+target_include_directories(thermal_detector_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(thermal_detector_component
   rclcpp
+  rclcpp_components
+  OpenCV
+  sensor_msgs)
+rclcpp_components_register_node(thermal_detector_component
+  PLUGIN "divitor_perception::ThermalDetectorNode"
+  EXECUTABLE thermal_detector_node)
+set_target_properties(thermal_detector_node PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+
+# Adaptive Thermal Detector Component
+add_library(adaptive_thermal_detector_component SHARED
+  src/adaptive_thermal_detector_node.cpp)
+target_include_directories(adaptive_thermal_detector_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(adaptive_thermal_detector_component
+  rclcpp
+  rclcpp_components
+  cv_bridge
   OpenCV
   sensor_msgs
-)
+  vision_msgs)
+rclcpp_components_register_node(adaptive_thermal_detector_component
+  PLUGIN "divitor_perception::AdaptiveThermalDetectorNode"
+  EXECUTABLE adaptive_thermal_detector_node)
+set_target_properties(adaptive_thermal_detector_node PROPERTIES INSTALL_RPATH "$ORIGIN/..")
 
-add_executable(yolo_detector_node src/yolo_detector_node.cpp)
-ament_target_dependencies(yolo_detector_node
+# Thermal Preprocessor Component
+add_library(thermal_preprocessor_component SHARED
+  src/thermal_preprocessor_node.cpp)
+target_include_directories(thermal_preprocessor_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(thermal_preprocessor_component
   rclcpp
+  rclcpp_components
+  cv_bridge
+  OpenCV
+  sensor_msgs)
+rclcpp_components_register_node(thermal_preprocessor_component
+  PLUGIN "divitor_perception::ThermalPreprocessorNode"
+  EXECUTABLE thermal_preprocessor_node)
+set_target_properties(thermal_preprocessor_node PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+
+# YOLO Detector Component
+add_library(yolo_detector_component SHARED
+  src/yolo_detector_node.cpp)
+target_include_directories(yolo_detector_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(yolo_detector_component
+  rclcpp
+  rclcpp_components
   OpenCV
   sensor_msgs
   cv_bridge
-  ament_index_cpp
-)
-target_link_libraries(yolo_detector_node
-  ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so
-)
+  ament_index_cpp)
+target_link_libraries(yolo_detector_component
+  ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so)
+rclcpp_components_register_node(yolo_detector_component
+  PLUGIN "divitor_perception::YoloDetectorNode"
+  EXECUTABLE yolo_detector_node)
+set_target_properties(yolo_detector_node PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+
+install(TARGETS
+  thermal_detector_component
+  yolo_detector_component
+  thermal_preprocessor_component
+  adaptive_thermal_detector_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
 
 install(TARGETS
   thermal_detector_node
   yolo_detector_node
+  thermal_preprocessor_node
+  adaptive_thermal_detector_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+install(DIRECTORY include/
+  DESTINATION include)
+
+ament_export_include_directories(include)
+ament_export_libraries(
+  thermal_detector_component
+  yolo_detector_component)
+ament_export_dependencies(
+  rclcpp
+  rclcpp_components
+  OpenCV
+  sensor_msgs
+  cv_bridge
+  ament_index_cpp)
 
 install(FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/models/yolo26n.onnx
