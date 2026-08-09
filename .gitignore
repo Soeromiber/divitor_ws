@@ -1,0 +1,22 @@
+# ROS 2 build directories
+build/
+install/
+log/
+
+# In-source build leftovers
+**/build/
+**/install/
+**/log/
+
+# Bags and datasets
+rosbag2_*
+*.mcap
+*.db3
+
+# OS / IDE junk
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+**/__pycache__/
