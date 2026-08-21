@@ -21,7 +21,7 @@ YoloDetectorNode::YoloDetectorNode(const rclcpp::NodeOptions &options)
     std::string labels_path = get_parameter("labels_path").as_string();
 
     detector_ =
-        std::make_unique<yolos::det::YOLODetector>(model_path, labels_path);
+        std::make_unique<yolos::det::YOLO26Detector>(model_path, labels_path);
 
     rclcpp::SensorDataQoS sensor_qos;
     image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(

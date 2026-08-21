@@ -5,6 +5,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(YOLOS_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/YOLOs-CPP" CACHE PATH "Path to YOLOs-CPP")
 
@@ -99,6 +101,23 @@ rclcpp_components_register_node(thermal_preprocessor_component
   EXECUTABLE thermal_preprocessor_node)
 set_target_properties(thermal_preprocessor_node PROPERTIES INSTALL_RPATH "$ORIGIN/..")
 
+# Thermal Colormapper Component
+add_library(thermal_colormapper_component SHARED
+  src/thermal_colormapper.cpp)
+target_include_directories(thermal_colormapper_component PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(thermal_colormapper_component
+  rclcpp
+  rclcpp_components
+  cv_bridge
+  OpenCV
+  sensor_msgs)
+rclcpp_components_register_node(thermal_colormapper_component
+  PLUGIN "divitor_perception::ThermalColormapperNode"
+  EXECUTABLE thermal_colormapper_node)
+set_target_properties(thermal_colormapper_node PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+
 # YOLO Detector Component
 add_library(yolo_detector_component SHARED
   src/yolo_detector_node.cpp)
@@ -123,6 +142,7 @@ install(TARGETS
   thermal_detector_component
   yolo_detector_component
   thermal_preprocessor_component
+  thermal_colormapper_component
   adaptive_thermal_detector_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -132,6 +152,7 @@ install(TARGETS
   thermal_detector_node
   yolo_detector_node
   thermal_preprocessor_node
+  thermal_colormapper_node
   adaptive_thermal_detector_node
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -142,7 +163,10 @@ install(DIRECTORY include/
 ament_export_include_directories(include)
 ament_export_libraries(
   thermal_detector_component
-  yolo_detector_component)
+  yolo_detector_component
+  thermal_preprocessor_component
+  thermal_colormapper_component
+  adaptive_thermal_detector_component)
 ament_export_dependencies(
   rclcpp
   rclcpp_components
