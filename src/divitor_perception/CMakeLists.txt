@@ -18,7 +18,6 @@ find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
-find_package(ament_index_cpp REQUIRED)
 
 if(NOT DEFINED ONNXRUNTIME_DIR)
     file(GLOB DOWNLOADED_ONNX_DIRS "${YOLOS_CPP_DIR}/onnxruntime-*")
@@ -129,8 +128,7 @@ ament_target_dependencies(yolo_detector_component
   rclcpp_components
   OpenCV
   sensor_msgs
-  cv_bridge
-  ament_index_cpp)
+  cv_bridge)
 target_link_libraries(yolo_detector_component
   ${ONNXRUNTIME_DIR}/lib/libonnxruntime.so)
 rclcpp_components_register_node(yolo_detector_component
@@ -172,13 +170,6 @@ ament_export_dependencies(
   rclcpp_components
   OpenCV
   sensor_msgs
-  cv_bridge
-  ament_index_cpp)
-
-install(FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/yolo26n.onnx
-  ${CMAKE_CURRENT_SOURCE_DIR}/models/coco.names
-  DESTINATION share/${PROJECT_NAME}/models
-)
+  cv_bridge)
 
 ament_package()

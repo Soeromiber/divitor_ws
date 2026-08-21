@@ -1,6 +1,5 @@
 #include "divitor_perception/yolo_detector_node.hpp"
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cv_bridge/cv_bridge.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 
@@ -8,18 +7,15 @@ namespace divitor_perception {
 
 YoloDetectorNode::YoloDetectorNode(const rclcpp::NodeOptions &options)
     : Node("yolo_detector_node", options) {
-    declare_parameter(
-        "model_path",
-        ament_index_cpp::get_package_share_directory("divitor_perception") +
-            "/models/yolo26n.onnx");
-    declare_parameter(
-        "labels_path",
-        ament_index_cpp::get_package_share_directory("divitor_perception") +
-            "/models/coco.names");
+    declare_parameter("model_path", "yolo26n.onnx");
+    declare_parameter("labels_path", "coco.names");
 
     std::string model_path = get_parameter("model_path").as_string();
     std::string labels_path = get_parameter("labels_path").as_string();
 
+    RCLCPP_INFO(get_logger(), "Loading YOLO model from: %s",
+                model_path.c_str());
+    RCLCPP_INFO(get_logger(), "Loading labels from: %s", labels_path.c_str());
     detector_ =
         std::make_unique<yolos::det::YOLO26Detector>(model_path, labels_path);
 
@@ -32,6 +28,8 @@ YoloDetectorNode::YoloDetectorNode(const rclcpp::NodeOptions &options)
 
     visualization_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
         "perception/rgb/visualization", 10);
+
+    RCLCPP_INFO(get_logger(), "YOLO Detector Node initialized successfully.");
 }
 
 void YoloDetectorNode::DetectAndPublish(
