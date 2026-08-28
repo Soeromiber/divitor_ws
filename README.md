@@ -12,7 +12,8 @@ The workspace contains the following core ROS 2 packages under `src/`:
 src/
 ├── divitor_bringup/      # Python package for launching and configuring nodes
 ├── divitor_driver/       # C++ package for camera and thermal sensor drivers
-├── divitor_perception/   # C++ package for preprocessors and detectors (YOLO / Thermal)
+├── divitor_perception/   # C++ package for preprocessors 
+├── divitor_perception_py/ # Python perception nodes, including the Ultralytics YOLO detector
 └── ros-gst-bridge/       # Submodule providing ROS 2 <-> GStreamer bridge elements
 ```
 
@@ -33,24 +34,22 @@ graph TD
     %% Perception Nodes
     subgraph Perception [Perception Pipeline]
         PRE[thermal_preprocessor]
-        DET[adaptive_thermal_detector]
-        YOLO[yolo_detector_node]
-        TDET[thermal_detector_node]
+        TCM[thermal_colormapper]
+        TYOLO[thermal_yolo_detector]
+        RYOLO[rgb_yolo_detector]
     end
 
     %% Topics
-    IMX -- "sensors/camera/rgb/image_raw" --> YOLO
+    IMX -- "sensors/camera/rgb/image_raw" --> TYOLO
     MLX -- "sensors/camera/thermal/image_raw" --> PRE
-    PRE -- "perception/thermal/image_preprocessed" --> DET
+    PRE -- "perception/thermal/image_preprocessed" --> TCM
+    TCM -- "perception/thermal/image_colormapped" --> RYOLO
     
     %% Outputs
-    DET -- "perception/thermal/detections" --> D_OUT["vision_msgs/Detection2DArray"]
-    DET -- "perception/thermal/debug_mask" --> M_OUT["sensor_msgs/Image (Debug Mask)"]
-    YOLO -- "perception/rgb/visualization" --> Y_OUT["sensor_msgs/Image (YOLO Vis)"]
-    
-    %% Simple Thermal
-    MLX -. "alternative subscription" .-> TDET
-    TDET -- "perception/thermal/visualization" --> T_OUT["sensor_msgs/Image (Thermal Vis)"]
+    TYOLO -- "perception/thermal/detections" --> D_OUT["vision_msgs/Detection3DArray"]
+    TYOLO -- "perception/thermal/image_annotated" --> Y_OUT["sensor_msgs/Image (YOLO Vis)"]
+    RYOLO -- "perception/rgb/detections" --> D_OUT["vision_msgs/Detection2DArray"]
+    RYOLO -- "perception/rgb/image_annotated" --> Y_OUT["sensor_msgs/Image (YOLO Vis)"]
 ```
 
 ---
@@ -80,7 +79,13 @@ sudo apt update && sudo apt install -y \
   ros-humble-cv-bridge \
   ros-humble-vision-msgs \
   ros-humble-sensor-msgs \
-  ros-humble-gscam
+  ros-humble-gscam \
+  python3-pip
+```
+
+Install the Python YOLO inference dependency for `divitor_perception_py`:
+```bash
+python3 -m pip install ultralytics
 ```
 
 ---
@@ -146,34 +151,42 @@ Processes camera frames and performs target extraction.
     * `bad_pixel_threshold` (default: `3.0`): Standard deviation multiplier to define a pixel as "bad" relative to the local neighborhood median.
     * `bad_pixel_neighborhood` (default: `3`): Neighborhood kernel size (odd integer, e.g., 3 or 5) for computing the local median via `cv::medianBlur`.
 
-* **`adaptive_thermal_detector`**:
-  * Dynamic target detector with specialized lighting/solar rejection modes.
+* **`thermal_colormapper_node`**:
+  * Converts the preprocessed thermal temperature image into a BGR8 color-mapped image for visualization.
   * **Subscribed Topics**:
-    * `perception/thermal/image_preprocessed` (`sensor_msgs/msg/Image`)
+    * `perception/thermal/image_preprocessed` (`sensor_msgs/msg/Image` in `32FC1` format)
   * **Published Topics**:
-    * `perception/thermal/detections` (`vision_msgs/msg/Detection2DArray`): Detection bounding boxes.
-    * `perception/thermal/debug_mask` (`sensor_msgs/msg/Image`): Cleaned binary detection mask.
+    * `perception/thermal/image_colormapped` (`sensor_msgs/msg/Image` in `bgr8` format)
   * **Parameters**:
-    * `detection_mode` (default: `"NIGHT"`): `"NIGHT"` (global dynamic thresholding) or `"MIDDAY"` (local variance/box-filtered thresholding).
-    * `k_sigma` (default: `1.5`): Multiplier for standard deviation thresholds.
-    * `temp_min` (default: `24.0`): Physiological minimum human temperature limit.
-    * `temp_max` (default: `38.0`): Physiological maximum human temperature limit.
-    * `solar_reject_temp` (default: `38.0`): Excludes sun-baked land/metal targets in Midday mode.
-    * `min_aspect_ratio` (default: `0.4`), `max_aspect_ratio` (default: `1.2`): Target aspect ratio filter for aerial targets.
-
-* **`yolo_detector_node`**:
-  * RGB camera human/object detector using ONNX Runtime.
-  * **Subscribed Topics**:
-    * `sensors/camera/rgb/image_raw` (`sensor_msgs/msg/Image`)
-  * **Published Topics**:
-    * `perception/rgb/visualization` (`sensor_msgs/msg/Image` with bounding boxes drawn)
-  * **Parameters**:
-    * `model_path`: Location of the `.onnx` model (defaults to package `models/yolo26n.onnx`).
-    * `labels_path`: Path to COCO class labels (defaults to package `models/coco.names`).
+    * `min_temp` (default: `5.0`): Lower temperature bound used for normalization.
+    * `max_temp` (default: `45.0`): Upper temperature bound used for normalization.
 
 ---
 
-### 3. `divitor_bringup`
+### 3. `divitor_perception_py`
+
+Provides Python-based perception nodes using `rclpy`, OpenCV, and Ultralytics.
+
+* **`yolo_detector`**:
+  * Runs YOLO object detection on incoming RGB images.
+  * **Subscribed Topics**:
+    * `image_raw` (`sensor_msgs/msg/Image`): Input image converted to BGR for inference.
+  * **Published Topics**:
+    * `detections` (`vision_msgs/msg/Detection2DArray`): Detected object bounding boxes and confidence scores.
+    * `image_annotated` (`sensor_msgs/msg/Image`): Optional image with detection annotations.
+  * **Parameters**:
+    * `model_path` (default: `yolo26n.pt`): Path to the Ultralytics YOLO model.
+    * `conf_threshold` (default: `0.25`): Minimum confidence for detections.
+    * `publish_annotated_image` (default: `true`): Enables publishing annotated images.
+
+  Run the node directly with:
+  ```bash
+  ros2 run divitor_perception_py yolo_detector
+  ```
+
+---
+
+### 4. `divitor_bringup`
 
 Contains launch files to initiate various combinations of drivers and perception nodes.
 
