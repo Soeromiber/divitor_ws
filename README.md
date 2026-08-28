@@ -130,16 +130,21 @@ Handles communication with physical sensors.
 Processes camera frames and performs target extraction.
 
 * **`thermal_preprocessor`**:
-  * Applies spatial upsampling (Bicubic), temporal Exponential Moving Average (EMA) filtering to reduce noise, and Gaussian Blur.
+  * Performs dead/bad pixel correction at native sensor resolution, applies temporal Exponential Moving Average (EMA) filtering, upscales the frame using Bicubic interpolation, and applies Gaussian Blur.
   * **Subscribed Topics**:
-    * `sensors/camera/thermal/image_raw` (`sensor_msgs/msg/Image`)
+    * `sensors/camera/thermal/image_raw` (`sensor_msgs/msg/Image` in `32FC1` format)
   * **Published Topics**:
-    * `perception/thermal/image_preprocessed` (`sensor_msgs/msg/Image`)
+    * `perception/thermal/image_preprocessed` (`sensor_msgs/msg/Image` in `32FC1` format)
   * **Parameters**:
     * `target_width` (default: `128`): Spatial upscaling target width.
     * `target_height` (default: `96`): Spatial upscaling target height.
-    * `enable_temporal_filter` (default: `true`): Toggle temporal noise EMA smoothing.
-    * `ema_alpha` (default: `0.6`): Alpha constant for temporal smoothing.
+    * `gaussian_kernel_size` (default: `5`): Kernel size for spatial Gaussian Blur (must be odd, e.g. 3, 5).
+    * `gaussian_sigma` (default: `1.0`): Standard deviation for Gaussian Blur.
+    * `enable_temporal_filter` (default: `true`): Toggle temporal noise EMA filtering.
+    * `ema_alpha` (default: `0.6`): Alpha constant for temporal Exponential Moving Average smoothing.
+    * `enable_bad_pixel_correction` (default: `true`): Toggle adaptive dead/bad pixel detection and replacement.
+    * `bad_pixel_threshold` (default: `3.0`): Standard deviation multiplier to define a pixel as "bad" relative to the local neighborhood median.
+    * `bad_pixel_neighborhood` (default: `3`): Neighborhood kernel size (odd integer, e.g., 3 or 5) for computing the local median via `cv::medianBlur`.
 
 * **`adaptive_thermal_detector`**:
   * Dynamic target detector with specialized lighting/solar rejection modes.

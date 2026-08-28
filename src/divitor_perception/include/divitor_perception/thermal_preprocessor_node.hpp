@@ -18,6 +18,7 @@ class ThermalPreprocessorNode : public rclcpp::Node {
   private:
     void rawImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg);
     void declareAndFetchParameters();
+    void replaceBadPixels(cv::Mat &frame) const;
 
     // ROS 2 Interfaces
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_raw_image_;
@@ -31,6 +32,9 @@ class ThermalPreprocessorNode : public rclcpp::Node {
     double gaussian_sigma_;
     bool enable_temporal_filter_;
     double ema_alpha_;
+    bool enable_bad_pixel_correction_;
+    double bad_pixel_threshold_; // std-dev multiplier
+    int bad_pixel_neighborhood_; // median filter kernel size (odd)
 
     // State buffers for temporal filtering
     cv::Mat prev_frame_32f_;

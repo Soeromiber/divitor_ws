@@ -26,6 +26,14 @@ ThermalPreprocessorNode::ThermalPreprocessorNode(
                     enable_temporal_filter_ = param.as_bool();
                 else if (param.get_name() == "ema_alpha")
                     ema_alpha_ = param.as_double();
+                else if (param.get_name() == "enable_bad_pixel_correction")
+                    enable_bad_pixel_correction_ = param.as_bool();
+                else if (param.get_name() == "bad_pixel_threshold")
+                    bad_pixel_threshold_ = param.as_double();
+                else if (param.get_name() == "bad_pixel_neighborhood") {
+                    int k = static_cast<int>(param.as_int());
+                    bad_pixel_neighborhood_ = (k % 2 == 0) ? k + 1 : k;
+                }
             }
             return result;
         });
@@ -53,6 +61,15 @@ void ThermalPreprocessorNode::declareAndFetchParameters() {
     enable_temporal_filter_ =
         declare_parameter<bool>("enable_temporal_filter", true);
     ema_alpha_ = declare_parameter<double>("ema_alpha", 0.6);
+    enable_bad_pixel_correction_ =
+        declare_parameter<bool>("enable_bad_pixel_correction", true);
+    // Pixels deviating more than this multiple of the global std-dev from their
+    // local median are considered bad and replaced by that median.
+    bad_pixel_threshold_ =
+        declare_parameter<double>("bad_pixel_threshold", 3.0);
+    // Neighborhood kernel for local median (must be odd, >= 3)
+    int k = declare_parameter<int>("bad_pixel_neighborhood", 3);
+    bad_pixel_neighborhood_ = (k % 2 == 0) ? k + 1 : k;
 }
 
 void ThermalPreprocessorNode::rawImageCallback(
@@ -73,36 +90,45 @@ void ThermalPreprocessorNode::rawImageCallback(
         return;
     }
 
-    // 2. Spatial Upsampling using Bicubic Interpolation
-    cv::Mat upsampled;
-    cv::resize(current_raw, upsampled, cv::Size(target_width_, target_height_),
-               0.0, 0.0, cv::INTER_CUBIC);
+    // 2. Bad Pixel Detection & Replacement (at native sensor resolution)
+    cv::Mat corrected;
+    current_raw.copyTo(corrected);
+    if (enable_bad_pixel_correction_) {
+        replaceBadPixels(corrected);
+    }
 
-    // 3. Temporal Exponential Moving Average (EMA) Filtering
+    // 3. Temporal Exponential Moving Average (EMA) Filtering (at native
+    // resolution)
     cv::Mat temporally_filtered;
     if (enable_temporal_filter_) {
-        if (is_first_frame_ || prev_frame_32f_.size() != upsampled.size()) {
-            upsampled.copyTo(prev_frame_32f_);
-            temporally_filtered = upsampled;
+        if (is_first_frame_ || prev_frame_32f_.size() != corrected.size()) {
+            corrected.copyTo(prev_frame_32f_);
+            temporally_filtered = corrected;
             is_first_frame_ = false;
         } else {
             // F_t = alpha * I_t + (1 - alpha) * F_{t-1}
-            cv::addWeighted(upsampled, ema_alpha_, prev_frame_32f_,
+            cv::addWeighted(corrected, ema_alpha_, prev_frame_32f_,
                             1.0 - ema_alpha_, 0.0, temporally_filtered);
             temporally_filtered.copyTo(prev_frame_32f_);
         }
     } else {
-        temporally_filtered = upsampled;
+        temporally_filtered = corrected;
     }
+
+    // 3. Spatial Upsampling using Bicubic Interpolation
+    cv::Mat upsampled;
+    cv::resize(temporally_filtered, upsampled,
+               cv::Size(target_width_, target_height_), 0.0, 0.0,
+               cv::INTER_CUBIC);
 
     // 4. Spatial Noise Reduction (Gaussian Blur)
     cv::Mat processed_frame;
     if (gaussian_kernel_size_ > 1 && (gaussian_kernel_size_ % 2 != 0)) {
-        cv::GaussianBlur(temporally_filtered, processed_frame,
+        cv::GaussianBlur(upsampled, processed_frame,
                          cv::Size(gaussian_kernel_size_, gaussian_kernel_size_),
                          gaussian_sigma_, gaussian_sigma_);
     } else {
-        processed_frame = temporally_filtered;
+        processed_frame = upsampled;
     }
 
     // 5. Construct output ROS Message using std::unique_ptr for Zero-Copy
@@ -116,6 +142,29 @@ void ThermalPreprocessorNode::rawImageCallback(
 
     // Transfer ownership directly to intra-process buffer
     pub_preprocessed_->publish(std::move(out_msg));
+}
+
+// Bad pixel correction: replace pixels whose deviation from their local median
+// exceeds `bad_pixel_threshold_` × the frame's global standard deviation.
+void ThermalPreprocessorNode::replaceBadPixels(cv::Mat &frame) const {
+    // --- Compute local median via medianBlur ---
+    // cv::medianBlur supports 32FC1 for ksize 3 or 5.
+    cv::Mat median_frame;
+    cv::medianBlur(frame, median_frame, bad_pixel_neighborhood_);
+
+    // --- Compute global std-dev for adaptive threshold ---
+    cv::Scalar mean_val, stddev_val;
+    cv::meanStdDev(frame, mean_val, stddev_val);
+    const float threshold = static_cast<float>(bad_pixel_threshold_) *
+                            static_cast<float>(stddev_val[0]);
+
+    // --- Identify bad pixels and replace with local median ---
+    cv::Mat diff;
+    cv::absdiff(frame, median_frame, diff);
+    cv::Mat bad_pixel_mask;
+    cv::threshold(diff, bad_pixel_mask, threshold, 1.0f, cv::THRESH_BINARY);
+    // Where mask == 1, copy median value; leave good pixels unchanged.
+    median_frame.copyTo(frame, bad_pixel_mask);
 }
 
 } // namespace divitor_perception
